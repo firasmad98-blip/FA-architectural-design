@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FA Studio</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0a0b0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FA Studio">
+<link rel="manifest" href="/portal/manifest.webmanifest">
+<link rel="icon" href="/portal/icon-192.png">
+<link rel="apple-touch-icon" href="/portal/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Lexend:wght@200;300;400;500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap">
+<link rel="stylesheet" href="/portal/portal.css">
+<style>
+  .row-acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+  .editor-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,2fr) 90px 38px;gap:8px;align-items:center}
+  .editor-row.two{grid-template-columns:minmax(0,2fr) minmax(0,1fr) 38px}
+  .editor{display:flex;flex-direction:column;gap:8px}
+  .editor .input{padding:9px 11px}
+  @media (max-width:700px){.editor-row{grid-template-columns:1fr 70px 38px}.editor-row .note{grid-column:1/-1;order:3}}
+  .progress-up{height:4px;background:var(--line);margin-top:10px;overflow:hidden}
+  .progress-up i{display:block;height:100%;background:var(--metal);width:0;transition:width .2s}
+  .photo .tools{display:flex;gap:6px;padding:0 12px 12px;flex-wrap:wrap}
+  .tag-cover{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ok);letter-spacing:.1em;text-transform:uppercase}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;margin-bottom:22px}
+  .kpis a{text-decoration:none}
+  .req-msg{white-space:pre-wrap;max-width:46ch;font-size:13.5px}
+  select.input{padding:8px 10px}
+  .range{display:flex;align-items:center;gap:14px}
+  .range input[type=range]{flex:1;accent-color:#9aa0a8}
+</style>
+</head>
+<body>
+<div id="root"><div class="loading">…</div></div>
+<script src="/portal/common.js"></script>
+<script src="/portal/studio/studio.js"></script>
+</body>
+</html>
