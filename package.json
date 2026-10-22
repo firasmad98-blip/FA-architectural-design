@@ -1,0 +1,16 @@
+{
+  "name": "fa-portal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FA Architectural Design website and client portal",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js"
+  },
+  "engines": {
+    "node": "22.x"
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}
