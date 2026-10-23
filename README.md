@@ -30,6 +30,11 @@ See `.env.example`. On Railway they are set as service variables.
 The first studio account is created from `ADMIN_EMAIL` and `ADMIN_PASSWORD` the first time the app starts.
 After you sign in and change your password, delete `ADMIN_PASSWORD` from Railway.
 
+**Automatic emails.** Add `BREVO_API_KEY` and `EMAIL_FROM` (a sender verified in Brevo) and the portal
+emails clients by itself: "Forgot password" sends a new one-time link straight to the client, and new
+clients receive their invitation by email. Without these settings, the studio is notified instead and
+sends the link on WhatsApp.
+
 ## Updating
 
 Change files, then:
