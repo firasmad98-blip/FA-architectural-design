@@ -8,6 +8,7 @@ const { DEFAULT_STAGES, accessProject, touch, money } = require('../lib/projects
 const files = require('../lib/files');
 const notify = require('../lib/notify');
 const access = require('../lib/access');
+const mail = require('../lib/email');
 
 const DOC_CATEGORIES = ['Drawings', 'Contracts', 'Permits', 'Reports', 'Invoices', 'Other'];
 
@@ -39,7 +40,9 @@ module.exports = (r) => {
        VALUES ('client', $1, lower($2), $3, $4, $5, false) RETURNING id, name, email, phone, lang`,
       [name, email, str(b.phone, 40), lang, auth.hashPassword(auth.randomPassword() + auth.randomPassword())]);
     const link = await access.createLink(u.id, 'invite');
-    return { client: u, link: access.linkUrl(req, link.token), purpose: 'invite', expiresAt: link.expiresAt };
+    const url = access.linkUrl(req, link.token);
+    const emailed = mail.enabled() && b.sendEmail !== false ? (await mail.sendAccessLink(u, 'invite', url)).sent : false;
+    return { client: u, link: url, purpose: 'invite', expiresAt: link.expiresAt, emailed };
   });
 
   r.patch('/api/studio/clients/:id', async (req, res, { params }) => {
@@ -64,11 +67,13 @@ module.exports = (r) => {
   // A new one-time link: the client taps it and chooses a new password (or their first one).
   r.post('/api/studio/clients/:id/access-link', async (req, res, { params }) => {
     requireAdmin(req);
-    const u = await db.one(`SELECT id, last_login_at FROM users WHERE id = $1 AND role = 'client'`, [int(params.id, 0)]);
+    const u = await db.one(`SELECT id, name, email, lang, last_login_at FROM users WHERE id = $1 AND role = 'client'`, [int(params.id, 0)]);
     if (!u) throw notFound('Client not found.');
     const purpose = u.last_login_at ? 'reset' : 'invite';
     const link = await access.createLink(u.id, purpose);
-    return { link: access.linkUrl(req, link.token), purpose, expiresAt: link.expiresAt };
+    const url = access.linkUrl(req, link.token);
+    const emailed = mail.enabled() ? (await mail.sendAccessLink(u, purpose, url)).sent : false;
+    return { link: url, purpose, expiresAt: link.expiresAt, emailed };
   });
 
   // The studio sets a password itself (for example to tell the client by phone). The client is asked to change it.

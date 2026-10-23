@@ -5,6 +5,7 @@ const auth = require('../lib/auth');
 const access = require('../lib/access');
 const passkeys = require('../lib/passkeys');
 const notify = require('../lib/notify');
+const mail = require('../lib/email');
 const { readJson, bad, notFound, str, int } = require('../lib/http');
 const { limiter } = require('../lib/limit');
 const { publicUser } = require('./auth');
@@ -41,15 +42,32 @@ module.exports = (r) => {
     return { user: publicUser(user) };
   });
 
-  // ---- "I can't sign in": tells the studio, without revealing whether the email exists ----
+  // ---- "Forgot password": emails a new one-time link automatically ----
+  // The answer is the same whether or not the email exists, so nobody can test which emails are clients.
+  // Without an email service set up, the studio is notified instead and sends the link by WhatsApp.
   r.post('/api/auth/help', async (req) => {
     helpLimit(req);
     const b = await readJson(req, 4096);
     const email = String(b.email || '').trim().toLowerCase();
-    if (!email) throw bad('Enter your email.');
-    const u = await db.one(`SELECT id, name FROM users WHERE lower(email) = $1 AND role = 'client' AND active`, [email]);
-    if (u) await notify.notifyAdmins('help', { name: u.name }, { url: '/portal/studio/#/clients' });
-    return { ok: true };
+    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw bad('Enter your email.');
+    const mode = mail.enabled() ? 'email' : 'studio';
+    const u = await db.one(`SELECT id, name, email, lang, role, last_login_at FROM users WHERE lower(email) = $1 AND active`, [email]);
+    if (!u) return { ok: true, mode };
+    if (mode === 'email') {
+      // At most one email every 2 minutes per person, so repeated taps don't flood their inbox.
+      const recent = await db.one(`SELECT 1 AS x FROM access_links WHERE user_id = $1 AND created_at > now() - interval '2 minutes'`, [u.id]);
+      if (recent) return { ok: true, mode };
+      const purpose = u.role === 'client' && !u.last_login_at ? 'invite' : 'reset';
+      const link = await access.createLink(u.id, purpose);
+      const sent = await mail.sendAccessLink(u, purpose, access.linkUrl(req, link.token));
+      if (sent.sent) {
+        if (u.role === 'client') await notify.notifyAdmins('helpSent', { name: u.name }, { url: '/portal/studio/#/clients' });
+        return { ok: true, mode };
+      }
+      // The email service failed: fall through and let the studio know, so the client isn't stuck.
+    }
+    if (u.role === 'client') await notify.notifyAdmins('help', { name: u.name }, { url: '/portal/studio/#/clients' });
+    return { ok: true, mode: 'studio' };
   });
 
   // ---- Face ID / fingerprint ----
