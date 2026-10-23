@@ -20,6 +20,7 @@ require('./routes/public')(router);
 require('./routes/auth')(router);
 require('./routes/portal')(router);
 require('./routes/studio')(router);
+require('./routes/access')(router);
 
 // ---------- Static files (website, portal pages, images) ----------
 const MIME = {
