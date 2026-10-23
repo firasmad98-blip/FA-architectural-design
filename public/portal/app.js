@@ -20,7 +20,8 @@
     document.documentElement.lang = state.lang;
     document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
     try { localStorage.setItem('fa-lang', state.lang); } catch (e) {}
-    if (save && state.user) api('POST', '/api/auth/language', { lang: state.lang }).catch(() => {});
+    if (save && state.user) return api('POST', '/api/auth/language', { lang: state.lang }).catch(() => {});
+    return Promise.resolve();
   }
   let saved = 'en'; try { saved = localStorage.getItem('fa-lang') || (navigator.language || 'en').slice(0, 2); } catch (e) {}
   setLang(saved);
@@ -31,7 +32,7 @@
   const langSwitch = () => `<div class="lang" role="group" aria-label="Language">
     ${['en', 'fr', 'ar'].map((l) => `<button type="button" data-lang="${l}" lang="${l}" aria-pressed="${state.lang === l}">${l === 'ar' ? 'ع' : l.toUpperCase()}</button>`).join('')}</div>`;
   function bindLang(el, rerender) {
-    $$('[data-lang]', el).forEach((b) => b.addEventListener('click', () => { setLang(b.dataset.lang, true); rerender(); }));
+    $$('[data-lang]', el).forEach((b) => b.addEventListener('click', async () => { await setLang(b.dataset.lang, true); rerender(); }));
   }
 
   // ---------- start ----------
@@ -48,6 +49,8 @@
 
   async function route() {
     clearInterval(state.pollTimer);
+    const ah = location.hash.match(/^#\/access\/([A-Za-z0-9_-]+)/);
+    if (ah) return renderAccess(ah[1]);
     if (!state.user) return renderLogin();
     if (state.user.mustChangePassword) return renderPassword(true);
     const h = location.hash.replace(/^#\/?/, '').split('/');
@@ -79,7 +82,8 @@
     eyeOff: '<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 6.1A9.6 9.6 0 0 1 12 6c6 0 9.5 6 9.5 6a16 16 0 0 1-3.2 3.9M6.4 7.6A16.4 16.4 0 0 0 2.5 12S6 18 12 18a9 9 0 0 0 4-.9M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>',
   };
   const STUDIO_WA = '96171262428';
-  let returning = false; try { returning = localStorage.getItem('fa-returning') === '1'; } catch (e) {}
+  const FACE = '<svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><path d="M9 9.5v1M15 9.5v1M12 9.5v3.5h-1M9.5 16a3.5 3.5 0 0 0 5 0"/></svg>';
+  const isReturning = () => { try { return localStorage.getItem('fa-returning') === '1'; } catch (e) { return false; } };
 
   function renderLogin() {
     document.title = 'FA Client Portal';
@@ -117,7 +121,7 @@
     bindLang(root, () => { const open = !!$('.si-bg'); renderLogin(); if (open) openSignIn(); });
     $('#mode').onclick = () => { FA.mode(FA.mode() === 'day' ? 'night' : 'day'); renderLogin(); };
     $$('[data-signin]').forEach((b) => { b.onclick = openSignIn; });
-    if (location.hash === '#signin' || returning) openSignIn();
+    if (location.hash === '#signin' || isReturning()) openSignIn();
   }
 
   function openSignIn() {
@@ -128,7 +132,8 @@
     bg.className = 'si-bg';
     bg.innerHTML = `<aside class="si" role="dialog" aria-modal="true" aria-labelledby="si-title">
       <div class="si-top"><img class="mark" src="/images/logo.webp" alt=""><button class="icon-btn" type="button" id="si-close" aria-label="${esc(t('si.close'))}">${FA.icon.close}</button></div>
-      <div><p class="label">${esc(t('login.eyebrow'))}</p><h2 id="si-title" style="margin-top:8px">${esc(t(returning && savedEmail ? 'si.back' : 'si.title'))}</h2><p class="small muted" style="margin-top:6px">${esc(t('si.sub'))}</p></div>
+      <div><p class="label">${esc(t('login.eyebrow'))}</p><h2 id="si-title" style="margin-top:8px">${esc(t(isReturning() && savedEmail ? 'si.back' : 'si.title'))}</h2><p class="small muted" style="margin-top:6px">${esc(t('si.sub'))}</p></div>
+      <div id="pk-box" hidden><button class="btn" type="button" id="pk-signin" style="width:100%">${FACE}${esc(t('pk.signin'))}</button><p class="small muted" style="text-align:center;margin-top:12px">${esc(t('pk.or'))}</p></div>
       <form id="login" novalidate>
         <div class="field"><label for="email">${esc(t('login.email'))}</label><input id="email" type="email" autocomplete="username" inputmode="email" required dir="ltr" value="${esc(savedEmail)}"></div>
         <div class="field"><label for="password">${esc(t('login.password'))}</label><div class="pw-wrap"><input id="password" type="password" autocomplete="current-password" required dir="ltr"><button type="button" id="pw-eye" aria-label="${esc(t('si.show'))}">${IC.eye}</button></div></div>
@@ -137,7 +142,11 @@
         <button class="btn" type="submit">${esc(t('login.submit'))}</button>
       </form>
       <div class="forgot"><button class="linkish" type="button" id="forgot" aria-expanded="false" style="align-self:flex-start">${esc(t('si.forgot'))}</button>
-        <div id="forgot-box" hidden><p class="muted" style="margin-bottom:10px">${esc(t('si.forgotText'))}</p><a class="btn ghost sm" href="${wa}" target="_blank" rel="noopener">${esc(t('si.wa'))}</a></div></div>
+        <div id="forgot-box" hidden style="display:flex;flex-direction:column;gap:10px">
+          <p class="muted">${esc(t('fg.text'))}</p>
+          <form id="help-form" novalidate style="display:flex;gap:8px;flex-wrap:wrap"><input class="input" id="help-email" type="email" dir="ltr" autocomplete="email" style="flex:1;min-width:180px" aria-label="${esc(t('login.email'))}"><button class="btn ghost sm" type="submit">${esc(t('fg.send'))}</button></form>
+          <p class="small" id="help-done" hidden role="status"></p>
+          <p class="small muted">${esc(t('fg.orWa'))}</p><a class="btn ghost sm" href="${wa}" target="_blank" rel="noopener" style="align-self:flex-start">${esc(t('si.wa'))}</a></div></div>
       <p class="alt">${esc(t('wel.notClient'))} <a href="/#contact">${esc(t('wel.start'))}</a></p>
     </aside>`;
     const close = () => { bg.remove(); document.removeEventListener('keydown', key); if (location.hash === '#signin') history.replaceState(null, '', location.pathname); };
@@ -153,7 +162,35 @@
       $('#pw-eye', bg).innerHTML = show ? IC.eyeOff : IC.eye;
       $('#pw-eye', bg).setAttribute('aria-label', t(show ? 'si.hide' : 'si.show'));
     };
-    $('#forgot', bg).onclick = () => { const b = $('#forgot-box', bg); b.hidden = !b.hidden; $('#forgot', bg).setAttribute('aria-expanded', String(!b.hidden)); };
+    $('#forgot', bg).onclick = () => {
+      const b = $('#forgot-box', bg); b.hidden = !b.hidden; $('#forgot', bg).setAttribute('aria-expanded', String(!b.hidden));
+      if (!b.hidden) { $('#help-email', bg).value = $('#email', bg).value; $('#help-email', bg).focus(); }
+    };
+    $('#help-form', bg).addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const done = $('#help-done', bg);
+      try { await api('POST', '/api/auth/help', { email: $('#help-email', bg).value }); done.textContent = t('fg.sent'); }
+      catch (ex) { done.textContent = ex.message; }
+      done.hidden = false;
+    });
+    // Face ID / fingerprint: shown when this device can do it.
+    FA.passkeyAvailable().then((yes) => {
+      if (!yes || !document.body.contains(bg)) return;
+      const box = $('#pk-box', bg); box.hidden = false;
+      let hasPk = false; try { hasPk = localStorage.getItem('fa-passkey') === '1'; } catch (e) {}
+      if (hasPk) $('#pk-signin', bg).focus();
+      $('#pk-signin', bg).onclick = async () => {
+        const err = $('#login-err', bg); err.hidden = true;
+        try {
+          const user = await FA.passkeyLogin();
+          state.user = user; state.projects = null;
+          bg.remove(); document.removeEventListener('keydown', key);
+          if (user.role === 'admin') { location.replace('/portal/studio/'); return; }
+          setLang(user.lang); if (location.hash === '#signin') history.replaceState(null, '', location.pathname);
+          route();
+        } catch (ex) { if (!FA.passkeyCancelled(ex)) { err.textContent = ex.status ? ex.message : t('pk.failed'); err.hidden = false; } }
+      };
+    });
     $('#login', bg).addEventListener('submit', async (e) => {
       e.preventDefault();
       const err = $('#login-err', bg); err.hidden = true;
@@ -171,9 +208,76 @@
         state.projects = null;
         bg.remove(); document.removeEventListener('keydown', key);
         if (location.hash === '#signin') history.replaceState(null, '', location.pathname);
-        route();
+        if (state.user.mustChangePassword || !remember) route(); else offerPasskey(() => route());
       } catch (ex) { err.textContent = ex.message; err.hidden = false; btn.disabled = false; }
     });
+  }
+
+  // ---------- access link: choose a password ----------
+  async function renderAccess(token) {
+    document.title = 'FA Client Portal';
+    const shellHtml = (inner) => `<div class="auth"><div class="art"><img src="/images/golden-pavilion.webp" alt=""></div><div class="side"><div class="top-tools">${langSwitch()}</div><div style="margin:auto;width:100%;max-width:420px;display:flex;flex-direction:column;gap:18px">${inner}</div></div></div>`;
+    root.innerHTML = shellHtml(`<p class="muted">${esc(t('loading'))}</p>`);
+    let info;
+    try { info = await api('GET', '/api/access/' + token); } catch (e) { info = { valid: false }; }
+    let chosen = false; try { chosen = localStorage.getItem('fa-lang-chosen') === '1'; } catch (e) {}
+    if (info.valid && info.lang && !chosen) setLang(info.lang);
+    const paint = () => {
+      if (!info.valid) {
+        const wa = `https://wa.me/${STUDIO_WA}?text=${encodeURIComponent(t('ax.waMsg'))}`;
+        root.innerHTML = shellHtml(`<img class="mark" src="/images/logo.webp" alt=""><div><h1 style="font-size:22px">${esc(t('ax.invalidTitle'))}</h1><p class="muted small" style="margin-top:8px">${esc(t('ax.invalidText'))}</p></div>
+          <a class="btn" href="${wa}" target="_blank" rel="noopener">${esc(t('ax.ask'))}</a><a class="btn ghost" href="/portal/#signin">${esc(t('ax.signin'))}</a>`);
+        bindLang(root, paint); return;
+      }
+      const first = String(info.name || '').split(/\s+/)[0];
+      const invite = info.purpose === 'invite';
+      root.innerHTML = shellHtml(`<img class="mark" src="/images/logo.webp" alt="">
+        <div><p class="label">${esc(t('login.eyebrow'))}</p><h1 style="font-size:22px;margin-top:8px">${esc(invite ? t('ax.welcome', { n: first }) : t('ax.resetTitle'))}</h1>
+        <p class="muted small" style="margin-top:8px">${esc(invite ? t('ax.inviteText', { e: info.email }) : t('ax.resetText', { e: info.email }))}</p></div>
+        <form id="ax" novalidate style="display:flex;flex-direction:column;gap:16px">
+          <input type="email" autocomplete="username" value="${esc(info.email)}" hidden readonly>
+          <div class="field"><label for="ax-new">${esc(t('pw.new'))}</label><div class="pw-wrap"><input id="ax-new" type="password" autocomplete="new-password" dir="ltr"><button type="button" id="ax-eye" aria-label="${esc(t('si.show'))}">${IC.eye}</button></div><span class="hint">${esc(t('pw.hint'))}</span></div>
+          <div class="field"><label for="ax-new2">${esc(t('pw.confirm'))}</label><input id="ax-new2" type="password" autocomplete="new-password" dir="ltr"></div>
+          <p class="err" id="ax-err" role="alert" hidden></p>
+          <button class="btn" type="submit">${esc(t('ax.save'))}</button>
+        </form>`);
+      bindLang(root, () => { try { localStorage.setItem('fa-lang-chosen', '1'); } catch (e) {} paint(); });
+      $('#ax-eye').onclick = () => { const a = $('#ax-new'), b = $('#ax-new2'), show = a.type === 'password'; a.type = b.type = show ? 'text' : 'password'; $('#ax-eye').innerHTML = show ? IC.eyeOff : IC.eye; };
+      $('#ax').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const err = $('#ax-err'); err.hidden = true;
+        if ($('#ax-new').value !== $('#ax-new2').value) { err.textContent = t('pw.mismatch'); err.hidden = false; return; }
+        const btn = $('#ax button[type=submit]'); btn.disabled = true;
+        try {
+          const r = await api('POST', '/api/access/' + token, { password: $('#ax-new').value });
+          state.user = r.user; state.projects = null;
+          try { localStorage.setItem('fa-returning', '1'); localStorage.setItem('fa-email', info.email); } catch (ex) {}
+          history.replaceState(null, '', '/portal/');
+          if (r.user.role === 'admin') { location.replace('/portal/studio/'); return; }
+          setLang(r.user.lang);
+          offerPasskey(() => route());
+        } catch (ex) { err.textContent = ex.message; err.hidden = false; btn.disabled = false; }
+      });
+      $('#ax-new').focus();
+    };
+    paint();
+  }
+
+  // After signing in with a password: offer Face ID / fingerprint once on this device.
+  async function offerPasskey(next) {
+    let asked = false; try { asked = localStorage.getItem('fa-pk-offered') === '1' || localStorage.getItem('fa-passkey') === '1'; } catch (e) {}
+    if (asked || !(await FA.passkeyAvailable())) return next();
+    try { localStorage.setItem('fa-pk-offered', '1'); } catch (e) {}
+    root.innerHTML = `<div class="auth"><div class="art"><img src="/images/golden-pavilion.webp" alt=""></div><div class="side"><div style="margin:auto;width:100%;max-width:420px;display:flex;flex-direction:column;gap:18px">
+      <span class="w-feat" style="border:0;padding:0;background:none"><span class="ic" style="width:56px;height:56px">${FACE.replace('width:18px;height:18px', 'width:28px;height:28px')}</span></span>
+      <div><h1 style="font-size:22px">${esc(t('pko.title'))}</h1><p class="muted" style="margin-top:8px">${esc(t('pko.text'))}</p></div>
+      <p class="err" id="pko-err" hidden></p>
+      <button class="btn" type="button" id="pko-yes">${esc(t('pko.yes'))}</button><button class="btn ghost" type="button" id="pko-no">${esc(t('pko.no'))}</button></div></div></div>`;
+    $('#pko-no').onclick = next;
+    $('#pko-yes').onclick = async () => {
+      try { await FA.passkeyRegister(); FA.toast(t('pko.done')); next(); }
+      catch (e) { if (FA.passkeyCancelled(e)) return; $('#pko-err').textContent = t('pk.failed'); $('#pko-err').hidden = false; }
+    };
   }
 
   // ---------- password ----------
@@ -476,6 +580,7 @@
         <div class="card"><h2>${esc(t('acc.security'))}</h2><div id="pw-host"></div></div>
       </div><div class="stack">
         <div class="card"><h2>${esc(t('acc.notif'))}</h2><p class="small" id="n-state">…</p><div class="acts" style="margin-top:14px" id="n-acts"></div></div>
+        <div class="card"><h2>${esc(t('pk.title'))}</h2><div id="pk-list"><p class="small muted">…</p></div><div class="acts" style="margin-top:14px"><button class="btn" id="pk-add" type="button" hidden>${esc(t('pk.add'))}</button></div></div>
         <div class="card"><h2>${esc(t('acc.install'))}</h2><p class="small muted" id="i-text"></p><div class="acts" style="margin-top:14px"><button class="btn ghost" id="i-btn" type="button" hidden>${esc(t('acc.installBtn'))}</button></div></div>
         <div class="card"><h2>${esc(t('acc.prefs'))}</h2>
           <div class="field"><span class="lbl">${esc(t('acc.language'))}</span>${langSwitch().replace('class="lang"', 'class="lang" style="align-self:flex-start"')}</div>
@@ -494,6 +599,7 @@
     // notifications
     async function paintNotif() {
       const st = await FA.pushState().catch(() => 'unsupported');
+      if (!$('#n-state')) return;
       const map = { on: 'acc.notifOn', off: 'acc.notifOff', blocked: 'acc.notifBlocked', unsupported: 'acc.notifUnsupported', 'ios-install': 'acc.notifIOS' };
       $('#n-state').textContent = t(map[st]);
       const acts = $('#n-acts');
@@ -504,6 +610,20 @@
       if ($('#n-test')) $('#n-test').onclick = async () => { await api('POST', '/api/push/test'); FA.toast(t('acc.testSent')); };
     }
     paintNotif();
+    // Face ID / fingerprint devices
+    async function paintPk() {
+      const can = await FA.passkeyAvailable();
+      let list = [];
+      try { list = (await api('GET', '/api/passkeys')).passkeys; } catch (e) {}
+      const host = $('#pk-list'), add = $('#pk-add');
+      if (!host || !add) return; // the page changed meanwhile
+      if (!list.length) host.innerHTML = `<p class="small muted">${esc(can ? t('pk.none') : t('pk.unsupported'))}</p>`;
+      else host.innerHTML = `<p class="small" style="margin-bottom:10px">${esc(t('pk.on'))}</p><ul class="list">${list.map((k) => `<li><span class="dot ok"></span><div class="t"><b>${esc(k.label || '')}</b><span>${esc(k.last_used_at ? t('pk.lastUsed', { d: d(k.last_used_at) }) : t('pk.since', { d: d(k.created_at) }))}</span></div><button class="linkish" type="button" data-pk-del="${k.id}">${esc(t('pk.remove'))}</button></li>`).join('')}</ul>`;
+      add.hidden = !can;
+      $$('[data-pk-del]').forEach((b) => { b.onclick = async () => { await api('DELETE', '/api/passkeys/' + b.dataset.pkDel); try { localStorage.removeItem('fa-passkey'); } catch (e) {} paintPk(); }; });
+    }
+    $('#pk-add').onclick = async () => { try { await FA.passkeyRegister(); FA.toast(t('pk.added')); paintPk(); } catch (e) { if (!FA.passkeyCancelled(e)) FA.toast(e.status ? e.message : t('pk.failed')); } };
+    paintPk();
     // install
     const iText = $('#i-text'), iBtn = $('#i-btn');
     function paintInstall() {

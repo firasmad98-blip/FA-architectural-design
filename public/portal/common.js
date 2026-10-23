@@ -173,6 +173,48 @@
   FA.installPrompt = null;
   window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); FA.installPrompt = e; document.dispatchEvent(new Event('fa-installable')); });
 
+  // ---------- Face ID / fingerprint (passkeys) ----------
+  const toB64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const fromB64u = (s) => { const p = '='.repeat((4 - (s.length % 4)) % 4); const b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, (c) => c.charCodeAt(0)); };
+  FA.passkeySupported = () => !!(window.PublicKeyCredential && window.AuthenticatorAttestationResponse &&
+    typeof AuthenticatorAttestationResponse.prototype.getPublicKey === 'function' && window.isSecureContext);
+  FA.passkeyAvailable = async () => {
+    if (!FA.passkeySupported()) return false;
+    try { return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(); } catch (e) { return false; }
+  };
+  FA.deviceLabel = () => {
+    const ua = navigator.userAgent;
+    if (/iPhone/.test(ua)) return 'iPhone'; if (/iPad/.test(ua)) return 'iPad'; if (/Android/.test(ua)) return 'Android phone';
+    if (/Macintosh/.test(ua)) return 'Mac'; if (/Windows/.test(ua)) return 'Windows computer'; return 'This device';
+  };
+  // Turn on Face ID / fingerprint for the signed-in person on this device.
+  FA.passkeyRegister = async () => {
+    const o = await FA.api('POST', '/api/passkeys/register-options', {});
+    const cred = await navigator.credentials.create({ publicKey: {
+      ...o, challenge: fromB64u(o.challenge), user: { ...o.user, id: fromB64u(o.user.id) },
+      excludeCredentials: (o.excludeCredentials || []).map((c) => ({ ...c, id: fromB64u(c.id) })),
+    } });
+    const res = cred.response;
+    await FA.api('POST', '/api/passkeys/register', {
+      id: cred.id, clientDataJSON: toB64u(res.clientDataJSON), authenticatorData: toB64u(res.getAuthenticatorData()),
+      publicKey: toB64u(res.getPublicKey()), alg: res.getPublicKeyAlgorithm(), label: FA.deviceLabel(),
+    });
+    try { localStorage.setItem('fa-passkey', '1'); } catch (e) {}
+    return true;
+  };
+  // Sign in with Face ID / fingerprint. Returns the signed-in user.
+  FA.passkeyLogin = async () => {
+    const o = await FA.api('POST', '/api/passkeys/login-options', {});
+    const cred = await navigator.credentials.get({ publicKey: { ...o, challenge: fromB64u(o.challenge), allowCredentials: [] } });
+    const res = cred.response;
+    const r = await FA.api('POST', '/api/passkeys/login', {
+      id: cred.id, clientDataJSON: toB64u(res.clientDataJSON), authenticatorData: toB64u(res.authenticatorData), signature: toB64u(res.signature),
+    });
+    try { localStorage.setItem('fa-passkey', '1'); localStorage.setItem('fa-returning', '1'); } catch (e) {}
+    return r.user;
+  };
+  FA.passkeyCancelled = (e) => e && (e.name === 'NotAllowedError' || e.name === 'AbortError');
+
   // Resize photos in the browser before upload (faster on mobile data, smaller storage).
   FA.shrinkImage = function (file, maxSide = 2400, quality = 0.85) {
     return new Promise((resolve) => {
