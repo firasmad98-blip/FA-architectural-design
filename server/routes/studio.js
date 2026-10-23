@@ -7,6 +7,7 @@ const { readJson, readForm, bad, notFound, str, int, num, date, clamp } = requir
 const { DEFAULT_STAGES, accessProject, touch, money } = require('../lib/projects');
 const files = require('../lib/files');
 const notify = require('../lib/notify');
+const access = require('../lib/access');
 
 const DOC_CATEGORIES = ['Drawings', 'Contracts', 'Permits', 'Reports', 'Invoices', 'Other'];
 
@@ -16,7 +17,9 @@ module.exports = (r) => {
     requireAdmin(req);
     const rows = await db.query(
       `SELECT u.id, u.name, u.email, u.phone, u.lang, u.active, u.created_at, u.last_login_at,
-              (SELECT count(*)::int FROM projects p WHERE p.client_id = u.id) AS projects
+              (SELECT count(*)::int FROM projects p WHERE p.client_id = u.id) AS projects,
+              (SELECT count(*)::int FROM passkeys k WHERE k.user_id = u.id) AS devices,
+              (SELECT max(l.expires_at) FROM access_links l WHERE l.user_id = u.id AND l.used_at IS NULL AND l.expires_at > now()) AS link_expires
          FROM users u WHERE u.role = 'client' ORDER BY u.active DESC, u.name`);
     return { clients: rows };
   });
@@ -29,13 +32,14 @@ module.exports = (r) => {
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw bad('Enter a valid email address.');
     const exists = await db.one('SELECT id FROM users WHERE lower(email) = lower($1)', [email]);
     if (exists) throw bad('Someone already uses this email.', 'email_taken');
-    const password = auth.randomPassword();
     const lang = ['en', 'fr', 'ar'].includes(b.lang) ? b.lang : 'en';
+    // The client chooses their own password from the invitation link; this random one is never shared.
     const u = await db.one(
       `INSERT INTO users (role, name, email, phone, lang, password_hash, must_change_password)
-       VALUES ('client', $1, lower($2), $3, $4, $5, true) RETURNING id, name, email`,
-      [name, email, str(b.phone, 40), lang, auth.hashPassword(password)]);
-    return { client: u, temporaryPassword: password };
+       VALUES ('client', $1, lower($2), $3, $4, $5, false) RETURNING id, name, email, phone, lang`,
+      [name, email, str(b.phone, 40), lang, auth.hashPassword(auth.randomPassword() + auth.randomPassword())]);
+    const link = await access.createLink(u.id, 'invite');
+    return { client: u, link: access.linkUrl(req, link.token), purpose: 'invite', expiresAt: link.expiresAt };
   });
 
   r.patch('/api/studio/clients/:id', async (req, res, { params }) => {
@@ -57,14 +61,35 @@ module.exports = (r) => {
     return { ok: true };
   });
 
-  r.post('/api/studio/clients/:id/reset-password', async (req, res, { params }) => {
+  // A new one-time link: the client taps it and chooses a new password (or their first one).
+  r.post('/api/studio/clients/:id/access-link', async (req, res, { params }) => {
+    requireAdmin(req);
+    const u = await db.one(`SELECT id, last_login_at FROM users WHERE id = $1 AND role = 'client'`, [int(params.id, 0)]);
+    if (!u) throw notFound('Client not found.');
+    const purpose = u.last_login_at ? 'reset' : 'invite';
+    const link = await access.createLink(u.id, purpose);
+    return { link: access.linkUrl(req, link.token), purpose, expiresAt: link.expiresAt };
+  });
+
+  // The studio sets a password itself (for example to tell the client by phone). The client is asked to change it.
+  r.post('/api/studio/clients/:id/set-password', async (req, res, { params }) => {
     requireAdmin(req);
     const u = await db.one(`SELECT id FROM users WHERE id = $1 AND role = 'client'`, [int(params.id, 0)]);
     if (!u) throw notFound('Client not found.');
-    const password = auth.randomPassword();
-    await db.query('UPDATE users SET password_hash = $1, must_change_password = true WHERE id = $2', [auth.hashPassword(password), u.id]);
+    const b = await readJson(req);
+    const weak = auth.checkPasswordStrength(b.password);
+    if (weak) throw bad(weak, 'weak_password');
+    await db.query('UPDATE users SET password_hash = $1, must_change_password = true WHERE id = $2', [auth.hashPassword(b.password), u.id]);
+    await db.query('UPDATE access_links SET used_at = now() WHERE user_id = $1 AND used_at IS NULL', [u.id]);
     await db.query('DELETE FROM sessions WHERE user_id = $1', [u.id]);
-    return { temporaryPassword: password };
+    return { ok: true };
+  });
+
+  // Removes all Face ID / fingerprint devices (for example if the client lost their phone).
+  r.del('/api/studio/clients/:id/passkeys', async (req, res, { params }) => {
+    requireAdmin(req);
+    await db.query(`DELETE FROM passkeys WHERE user_id = (SELECT id FROM users WHERE id = $1 AND role = 'client')`, [int(params.id, 0)]);
+    return { ok: true };
   });
 
   // ================= Projects =================
