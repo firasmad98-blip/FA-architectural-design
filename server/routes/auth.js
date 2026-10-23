@@ -15,7 +15,7 @@ module.exports = (r) => {
     if (!email || !password) throw bad('Enter your email and password.');
     const user = await db.one('SELECT * FROM users WHERE lower(email) = $1 AND active = true', [email]);
     if (!user || !auth.verifyPassword(password, user.password_hash)) throw unauthorized('Email or password is incorrect.');
-    await auth.createSession(res, user.id, req.headers['user-agent']);
+    await auth.createSession(res, user.id, req.headers['user-agent'], b.remember !== false);
     await db.query('UPDATE users SET last_login_at = now() WHERE id = $1', [user.id]);
     return { user: publicUser(user) };
   });
