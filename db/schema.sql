@@ -184,3 +184,29 @@ CREATE TABLE IF NOT EXISTS requests (
   status       text NOT NULL DEFAULT 'new' CHECK (status IN ('new','contacted','closed')),
   created_at   timestamptz NOT NULL DEFAULT now()
 );
+
+-- One-time links to join the portal (invite) or choose a new password (reset). Only a hash of the token is stored.
+CREATE TABLE IF NOT EXISTS access_links (
+  id         serial PRIMARY KEY,
+  user_id    integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash text NOT NULL UNIQUE,
+  purpose    text NOT NULL CHECK (purpose IN ('invite','reset')),
+  expires_at timestamptz NOT NULL,
+  used_at    timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS access_links_user_idx ON access_links (user_id);
+
+-- Face ID / fingerprint sign-in (passkeys). Each row is one device.
+CREATE TABLE IF NOT EXISTS passkeys (
+  id            serial PRIMARY KEY,
+  user_id       integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  credential_id text NOT NULL UNIQUE,
+  public_key    text NOT NULL,
+  alg           integer NOT NULL,
+  sign_count    bigint NOT NULL DEFAULT 0,
+  label         text,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  last_used_at  timestamptz
+);
+CREATE INDEX IF NOT EXISTS passkeys_user_idx ON passkeys (user_id);
