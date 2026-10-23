@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   user_agent text
 );
 CREATE INDEX IF NOT EXISTS sessions_user_idx ON sessions (user_id);
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS remember boolean NOT NULL DEFAULT true;
 
 CREATE TABLE IF NOT EXISTS projects (
   id             serial PRIMARY KEY,
