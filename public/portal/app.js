@@ -65,35 +65,112 @@
     $('#retry').onclick = () => route();
   }
 
-  // ---------- login ----------
+  // ---------- welcome page + sign-in panel ----------
+  const IC = {
+    stages: '<svg viewBox="0 0 24 24"><path d="M4 18h4v-5H4zM10 18h4V9h-4zM16 18h4V5h-4z"/></svg>',
+    approve: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.2l2.4 2.4 4.6-4.8"/></svg>',
+    docs: '<svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M9.5 12h5M9.5 15.5h5"/></svg>',
+    photos: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/></svg>',
+    chat: '<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+    pay: '<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="1"/><path d="M3 10h18M7 15h4"/></svg>',
+    lock: '<svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="1"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/></svg>',
+    phone: '<svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/></svg>',
+    eye: '<svg viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+    eyeOff: '<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 6.1A9.6 9.6 0 0 1 12 6c6 0 9.5 6 9.5 6a16 16 0 0 1-3.2 3.9M6.4 7.6A16.4 16.4 0 0 0 2.5 12S6 18 12 18a9 9 0 0 0 4-.9M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>',
+  };
+  const STUDIO_WA = '96171262428';
+  let returning = false; try { returning = localStorage.getItem('fa-returning') === '1'; } catch (e) {}
+
   function renderLogin() {
     document.title = 'FA Client Portal';
-    root.innerHTML = `<div class="auth">
-      <div class="art"><img src="/images/golden-pavilion.webp" alt=""><div class="cap"><p class="label" style="color:#cfd3d9">FA Architectural Design</p><p>${esc(t('login.art'))}</p></div></div>
-      <div class="side">
-        <div class="top-tools">${langSwitch()}<button class="icon-btn" id="mode" type="button" aria-label="Day / night">${FA.mode() === 'day' ? FA.icon.moon : FA.icon.sun}</button></div>
-        <form id="login" novalidate>
-          <img class="mark" src="/images/logo.webp" alt="FA Architectural Design">
-          <div><p class="label">${esc(t('login.eyebrow'))}</p><h1>${esc(t('login.title'))}</h1></div>
-          <div class="field"><label for="email">${esc(t('login.email'))}</label><input id="email" type="email" autocomplete="username" required dir="ltr"></div>
-          <div class="field"><label for="password">${esc(t('login.password'))}</label><input id="password" type="password" autocomplete="current-password" required dir="ltr"></div>
-          <p class="err" id="login-err" role="alert" hidden></p>
-          <button class="btn" type="submit">${esc(t('login.submit'))}</button>
-          <p class="small muted">${esc(t('login.help'))}</p>
-        </form>
-      </div></div>`;
-    bindLang(root, renderLogin);
+    const feats = [['stages', 'f1'], ['approve', 'f2'], ['docs', 'f3'], ['photos', 'f4'], ['chat', 'f5'], ['pay', 'f6']];
+    root.innerHTML = `
+      <header class="topbar">
+        <a class="brand" href="/"><img src="/images/logo.webp" alt=""><span>FA Architectural Design<small>${esc(t('brand.sub'))}</small></span></a>
+        <div class="top-tools">${langSwitch()}<button class="icon-btn hide-sm" id="mode" type="button" aria-label="Day / night">${FA.mode() === 'day' ? FA.icon.moon : FA.icon.sun}</button><button class="btn sm" type="button" data-signin>${esc(t('wel.signin'))}</button></div>
+      </header>
+      <main class="welcome">
+        <section class="w-hero">
+          <div>
+            <p class="label">${esc(t('wel.eyebrow'))}</p>
+            <h1>${esc(t('wel.title'))}</h1>
+            <p class="lead">${esc(t('wel.lead'))}</p>
+            <div class="cta"><button class="btn" type="button" data-signin>${IC.lock.replace('<svg', '<svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6"')}${esc(t('wel.signin'))}</button>
+              <span class="alt">${esc(t('wel.notClient'))} <a href="/#contact">${esc(t('wel.start'))}</a></span></div>
+          </div>
+          <div class="w-art"><img src="/images/golden-pavilion.webp" alt="">
+            <div class="chips">${[['stages', 'f1'], ['approve', 'f2'], ['photos', 'f4']].map(([i, k]) => `<span>${IC[i]}${esc(t(k + '.t'))}</span>`).join('')}</div></div>
+        </section>
+        <section class="w-sec"><h2>${esc(t('wel.whatTitle'))}</h2>
+          <div class="w-feats">${feats.map(([i, k]) => `<article class="w-feat"><span class="ic">${IC[i]}</span><h3>${esc(t(k + '.t'))}</h3><p>${esc(t(k + '.p'))}</p></article>`).join('')}</div>
+        </section>
+        <section class="w-sec"><h2>${esc(t('wel.howTitle'))}</h2>
+          <ol class="w-steps">${['h1', 'h2', 'h3'].map((k, n) => `<li><span class="n">0${n + 1}</span><h3>${esc(t(k + '.t'))}</h3><p>${esc(t(k + '.p'))}</p></li>`).join('')}</ol>
+          <div class="w-band">
+            <div>${IC.lock}<p><b>${esc(t('wel.private.t'))}</b><span>${esc(t('wel.private.p'))}</span></p></div>
+            <div>${IC.phone}<p><b>${esc(t('wel.app.t'))}</b><span>${esc(t('wel.app.p'))}</span></p></div>
+          </div>
+          <div class="w-final"><h2>${esc(t('wel.notClient'))}</h2><div class="acts"><a class="btn ghost" href="/#contact">${esc(t('wel.start'))}</a><button class="btn" type="button" data-signin>${esc(t('wel.signin'))}</button></div></div>
+        </section>
+        <footer class="w-foot"><span>© ${new Date().getFullYear()} FA Architectural Design</span><a href="/">${esc(t('wel.website'))}</a></footer>
+      </main>`;
+    bindLang(root, () => { const open = !!$('.si-bg'); renderLogin(); if (open) openSignIn(); });
     $('#mode').onclick = () => { FA.mode(FA.mode() === 'day' ? 'night' : 'day'); renderLogin(); };
-    $('#login').addEventListener('submit', async (e) => {
+    $$('[data-signin]').forEach((b) => { b.onclick = openSignIn; });
+    if (location.hash === '#signin' || returning) openSignIn();
+  }
+
+  function openSignIn() {
+    if ($('.si-bg')) return;
+    let savedEmail = ''; try { savedEmail = localStorage.getItem('fa-email') || ''; } catch (e) {}
+    const wa = `https://wa.me/${STUDIO_WA}?text=${encodeURIComponent(t('si.waMsg'))}`;
+    const bg = document.createElement('div');
+    bg.className = 'si-bg';
+    bg.innerHTML = `<aside class="si" role="dialog" aria-modal="true" aria-labelledby="si-title">
+      <div class="si-top"><img class="mark" src="/images/logo.webp" alt=""><button class="icon-btn" type="button" id="si-close" aria-label="${esc(t('si.close'))}">${FA.icon.close}</button></div>
+      <div><p class="label">${esc(t('login.eyebrow'))}</p><h2 id="si-title" style="margin-top:8px">${esc(t(returning && savedEmail ? 'si.back' : 'si.title'))}</h2><p class="small muted" style="margin-top:6px">${esc(t('si.sub'))}</p></div>
+      <form id="login" novalidate>
+        <div class="field"><label for="email">${esc(t('login.email'))}</label><input id="email" type="email" autocomplete="username" inputmode="email" required dir="ltr" value="${esc(savedEmail)}"></div>
+        <div class="field"><label for="password">${esc(t('login.password'))}</label><div class="pw-wrap"><input id="password" type="password" autocomplete="current-password" required dir="ltr"><button type="button" id="pw-eye" aria-label="${esc(t('si.show'))}">${IC.eye}</button></div></div>
+        <label class="check"><input type="checkbox" id="remember" checked> ${esc(t('si.remember'))}</label>
+        <p class="err" id="login-err" role="alert" hidden></p>
+        <button class="btn" type="submit">${esc(t('login.submit'))}</button>
+      </form>
+      <div class="forgot"><button class="linkish" type="button" id="forgot" aria-expanded="false" style="align-self:flex-start">${esc(t('si.forgot'))}</button>
+        <div id="forgot-box" hidden><p class="muted" style="margin-bottom:10px">${esc(t('si.forgotText'))}</p><a class="btn ghost sm" href="${wa}" target="_blank" rel="noopener">${esc(t('si.wa'))}</a></div></div>
+      <p class="alt">${esc(t('wel.notClient'))} <a href="/#contact">${esc(t('wel.start'))}</a></p>
+    </aside>`;
+    const close = () => { bg.remove(); document.removeEventListener('keydown', key); if (location.hash === '#signin') history.replaceState(null, '', location.pathname); };
+    const key = (e) => { if (e.key === 'Escape') close(); };
+    bg.addEventListener('click', (e) => { if (e.target === bg) close(); });
+    document.addEventListener('keydown', key);
+    document.body.appendChild(bg);
+    $('#si-close', bg).onclick = close;
+    (savedEmail ? $('#password', bg) : $('#email', bg)).focus();
+    $('#pw-eye', bg).onclick = () => {
+      const i = $('#password', bg), show = i.type === 'password';
+      i.type = show ? 'text' : 'password';
+      $('#pw-eye', bg).innerHTML = show ? IC.eyeOff : IC.eye;
+      $('#pw-eye', bg).setAttribute('aria-label', t(show ? 'si.hide' : 'si.show'));
+    };
+    $('#forgot', bg).onclick = () => { const b = $('#forgot-box', bg); b.hidden = !b.hidden; $('#forgot', bg).setAttribute('aria-expanded', String(!b.hidden)); };
+    $('#login', bg).addEventListener('submit', async (e) => {
       e.preventDefault();
-      const err = $('#login-err'); err.hidden = true;
-      const btn = $('#login button[type=submit]'); btn.disabled = true;
+      const err = $('#login-err', bg); err.hidden = true;
+      const btn = $('#login button[type=submit]', bg); btn.disabled = true;
+      const remember = $('#remember', bg).checked;
       try {
-        const r = await api('POST', '/api/auth/login', { email: $('#email').value, password: $('#password').value });
+        const r = await api('POST', '/api/auth/login', { email: $('#email', bg).value, password: $('#password', bg).value, remember });
+        try {
+          if (remember) { localStorage.setItem('fa-returning', '1'); localStorage.setItem('fa-email', $('#email', bg).value.trim()); }
+          else { localStorage.removeItem('fa-returning'); localStorage.removeItem('fa-email'); }
+        } catch (ex) {}
         state.user = r.user;
         if (state.user.role === 'admin') { location.replace('/portal/studio/'); return; }
         setLang(state.user.lang === 'en' && state.lang !== 'en' ? state.lang : state.user.lang, state.user.lang !== state.lang);
         state.projects = null;
+        bg.remove(); document.removeEventListener('keydown', key);
+        if (location.hash === '#signin') history.replaceState(null, '', location.pathname);
         route();
       } catch (ex) { err.textContent = ex.message; err.hidden = false; btn.disabled = false; }
     });

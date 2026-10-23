@@ -274,3 +274,73 @@ td.num{white-space:nowrap}
 .modal h2{font-size:15px;letter-spacing:.06em}
 .copybox{font-family:"IBM Plex Mono",monospace;font-size:13px;background:var(--ink);border:1px solid var(--line);padding:14px;white-space:pre-wrap;color:var(--white);user-select:all;overflow-wrap:anywhere}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- welcome page (visitors and signed-out clients) ---------- */
+.welcome{max-width:1180px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));padding-block:0 72px}
+.w-hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:48px;align-items:center;padding-block:64px 56px;border-bottom:1px solid var(--line)}
+.w-hero h1{font-size:clamp(24px,3.6vw,44px);line-height:1.25;margin-top:16px}
+:root[lang="ar"] .w-hero h1{font-size:clamp(28px,4vw,46px);line-height:1.45}
+.w-hero .lead{margin-top:20px;font-size:17px;max-width:52ch;color:var(--silver)}
+.w-hero .cta{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:center;margin-top:30px}
+.w-hero .cta .alt{font-size:14px;color:var(--steel)}
+.w-hero .cta .alt a{color:var(--white);text-underline-offset:3px}
+.w-art{position:relative;aspect-ratio:4/3;border:1px solid var(--line);overflow:hidden;background:var(--panel-2)}
+.w-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.w-art .chips{position:absolute;inset-inline:16px;bottom:16px;display:flex;flex-wrap:wrap;gap:8px}
+.w-art .chips span{display:inline-flex;align-items:center;gap:8px;background:rgba(10,11,13,.72);color:#eceef1;border:1px solid rgba(255,255,255,.18);padding:7px 12px;font-size:13px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.w-art .chips svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.w-sec{padding-block:56px 8px}
+.w-sec > h2{font-size:15px;letter-spacing:.08em;margin-bottom:24px}
+.w-feats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.w-feat{border:1px solid var(--line);background:var(--panel);padding:22px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.w-feat .ic{width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line-2);color:var(--white)}
+.w-feat .ic svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.w-feat h3{font-family:var(--body);font-size:17px;font-weight:400;letter-spacing:0}
+.w-feat p{font-size:14.5px;color:var(--steel)}
+.w-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line)}
+.w-steps li{padding-block:22px 6px;padding-inline:0 24px;min-width:0}
+.w-steps li + li{padding-inline-start:24px;border-inline-start:1px solid var(--line)}
+.w-steps .n{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--steel)}
+.w-steps h3{font-family:var(--body);font-size:17px;font-weight:400;letter-spacing:0;margin:8px 0 6px}
+.w-steps p{font-size:14.5px;color:var(--steel)}
+.w-band{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:48px}
+.w-band > div{display:flex;gap:14px;align-items:flex-start;border:1px solid var(--line);background:var(--panel-2);padding:18px 20px;min-width:0}
+.w-band svg{width:22px;height:22px;flex:none;fill:none;stroke:var(--white);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin-top:2px}
+.w-band b{display:block;color:var(--white);font-weight:400}
+.w-band span{font-size:14px;color:var(--steel)}
+.w-final{margin-top:48px;border:1px solid var(--line-2);background:var(--panel);padding:28px;display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap}
+.w-final h2{font-size:16px;letter-spacing:.06em}
+.w-foot{border-top:1px solid var(--line);margin-top:56px;padding-top:20px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13.5px;color:var(--steel)}
+.w-foot a{color:var(--silver)}
+@media (max-width:900px){
+  .w-hero{grid-template-columns:1fr;gap:28px;padding-block:32px 40px}
+  .w-art{order:-1;aspect-ratio:16/10}
+  .w-feats{grid-template-columns:1fr 1fr}
+  .w-steps{grid-template-columns:1fr}
+  .w-steps li,.w-steps li + li{padding:18px 0;border-inline-start:0;border-bottom:1px solid var(--line)}
+  .w-band{grid-template-columns:1fr}
+}
+@media (max-width:560px){.w-feats{grid-template-columns:1fr}.top-tools .hide-sm{display:none}}
+
+/* sign-in panel */
+.si-bg{position:fixed;inset:0;z-index:70;background:rgba(5,6,8,.6);display:flex;justify-content:flex-end;animation:si-fade .2s ease}
+.si{width:min(440px,100%);height:100%;overflow-y:auto;background:var(--ink);border-inline-start:1px solid var(--line-2);padding-top:max(20px,env(safe-area-inset-top,0px));padding-bottom:max(24px,env(safe-area-inset-bottom,0px));padding-inline:28px;display:flex;flex-direction:column;gap:18px;animation:si-in .25s cubic-bezier(.2,.7,.2,1)}
+:root[dir="rtl"] .si{animation-name:si-in-rtl}
+.si .si-top{display:flex;justify-content:space-between;align-items:center}
+.si img.mark{width:56px;filter:var(--logo-filter)}
+.si h2{font-size:18px;line-height:1.4;letter-spacing:.03em}
+:root[lang="ar"] .si h2{font-size:22px}
+.si form{display:flex;flex-direction:column;gap:16px}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-inline-end:48px}
+.pw-wrap button{position:absolute;inset-inline-end:4px;top:50%;transform:translateY(-50%);width:40px;height:38px;border:0;background:none;color:var(--steel);display:grid;place-items:center}
+.pw-wrap button:hover{color:var(--white)}
+.pw-wrap svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.si .forgot{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:10px;font-size:14px}
+.si .forgot .btn{align-self:flex-start}
+.si .alt{margin-top:auto;font-size:13.5px;color:var(--steel)}
+.si .alt a{color:var(--white)}
+@keyframes si-in{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes si-in-rtl{from{transform:translateX(-24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes si-fade{from{opacity:0}to{opacity:1}}
+@media (max-width:560px){.si{width:100%;border-inline-start:0;padding-inline:20px}}
