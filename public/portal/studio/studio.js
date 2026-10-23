@@ -420,7 +420,7 @@
     const first = client.name.split(' ')[0], lang = MSG.invite[client.lang] ? client.lang : 'en';
     const text = r.purpose === 'invite' ? MSG.invite[lang](first, client.email, r.link, portalUrl()) : MSG.reset[lang](first, client.email, r.link);
     showMessage(client, r.purpose === 'invite' ? `Send the invitation to ${client.name}` : `Send the new link to ${client.name}`,
-      `The client taps the link and chooses ${r.purpose === 'invite' ? 'their' : 'a new'} password. It works once and stays valid until ${d(r.expiresAt)}, ${FA.time(r.expiresAt, L)}. Any older link stops working.`, text);
+      `${r.emailed ? `✓ Already emailed to ${client.email} automatically. You can also send it on WhatsApp below. ` : ''}The client taps the link and chooses ${r.purpose === 'invite' ? 'their' : 'a new'} password. It works once and stays valid until ${d(r.expiresAt)}, ${FA.time(r.expiresAt, L)}. Any older link stops working.`, text);
   }
   function helpSignIn(c) {
     const status = [
