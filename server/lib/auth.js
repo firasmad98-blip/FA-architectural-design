@@ -38,13 +38,16 @@ function randomPassword() {
   return out.slice(0, 5) + '-' + out.slice(5);
 }
 
-async function createSession(res, userId, userAgent) {
+// remember = true: stay signed in on this device for 30 days.
+// remember = false (shared computer): signed out when the browser closes, or after 12 hours at most.
+async function createSession(res, userId, userAgent, remember = true) {
   const id = crypto.randomBytes(32).toString('hex');
+  const life = remember ? `${SESSION_DAYS} days` : '12 hours';
   await db.query(
-    `INSERT INTO sessions (id, user_id, expires_at, user_agent) VALUES ($1, $2, now() + interval '${SESSION_DAYS} days', $3)`,
-    [id, userId, (userAgent || '').slice(0, 300)]
+    `INSERT INTO sessions (id, user_id, expires_at, user_agent, remember) VALUES ($1, $2, now() + interval '${life}', $3, $4)`,
+    [id, userId, (userAgent || '').slice(0, 300), !!remember]
   );
-  setCookie(res, COOKIE, id, { maxAge: SESSION_DAYS * 86400, secure: isProd });
+  setCookie(res, COOKIE, id, remember ? { maxAge: SESSION_DAYS * 86400, secure: isProd } : { secure: isProd });
   return id;
 }
 
@@ -66,7 +69,7 @@ async function loadUser(req) {
   );
   if (!row) return null;
   // Slide the expiry forward at most once a day.
-  db.query(`UPDATE sessions SET expires_at = now() + interval '${SESSION_DAYS} days' WHERE id = $1 AND expires_at < now() + interval '${SESSION_DAYS - 1} days'`, [sid]).catch(() => {});
+  db.query(`UPDATE sessions SET expires_at = now() + interval '${SESSION_DAYS} days' WHERE id = $1 AND remember AND expires_at < now() + interval '${SESSION_DAYS - 1} days'`, [sid]).catch(() => {});
   return row;
 }
 
