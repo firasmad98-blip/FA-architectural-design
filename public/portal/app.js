@@ -169,7 +169,7 @@
     $('#help-form', bg).addEventListener('submit', async (e) => {
       e.preventDefault();
       const done = $('#help-done', bg);
-      try { await api('POST', '/api/auth/help', { email: $('#help-email', bg).value }); done.textContent = t('fg.sent'); }
+      try { const r = await api('POST', '/api/auth/help', { email: $('#help-email', bg).value }); done.textContent = t(r && r.mode === 'email' ? 'fg.sentEmail' : 'fg.sent'); }
       catch (ex) { done.textContent = ex.message; }
       done.hidden = false;
     });
