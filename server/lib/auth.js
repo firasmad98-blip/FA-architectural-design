@@ -79,6 +79,12 @@ function requireAdmin(req) { requireUser(req); if (req.user.role !== 'admin') th
 // The first studio account is created from environment variables on first start.
 async function ensureAdmin() {
   const count = await db.one(`SELECT count(*)::int AS n FROM users WHERE role = 'admin'`);
+  // Studio password recovery: set ADMIN_RESET=true with ADMIN_EMAIL and ADMIN_PASSWORD, restart once, then remove them.
+  if (count && count.n > 0 && process.env.ADMIN_RESET === 'true' && process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
+    const r = await db.one(`UPDATE users SET password_hash = $1 WHERE role = 'admin' AND lower(email) = lower($2) RETURNING id`,
+      [hashPassword(process.env.ADMIN_PASSWORD), process.env.ADMIN_EMAIL.trim()]);
+    if (r) { await db.query('DELETE FROM sessions WHERE user_id = $1', [r.id]); console.log('  Studio password was reset from ADMIN_PASSWORD. Remove ADMIN_RESET and ADMIN_PASSWORD now.'); }
+  }
   if (count && count.n > 0) return;
   const email = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
   const password = process.env.ADMIN_PASSWORD || '';

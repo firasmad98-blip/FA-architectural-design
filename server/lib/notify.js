@@ -54,6 +54,8 @@ const T = {
     progress: (p) => ['Project update', `${p.project} is now at ${p.progress}%.`],
     decided: (p) => [p.approved ? 'Approved by client' : 'Changes requested', `${p.title} · ${p.project}`],
     request: (p) => ['New website request', `${p.name} · ${p.type || 'Project'}`],
+    help: (p) => ['Sign-in help requested', `${p.name} can’t sign in and asked for a new access link. Open Clients → Help with sign-in.`],
+    joined: (p) => ['Client joined the portal', `${p.name} set their password and signed in.`],
     test: () => ['Notifications are on', 'You will be notified here about your project.'],
   },
   fr: {
