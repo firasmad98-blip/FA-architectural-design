@@ -385,21 +385,72 @@
   }
 
   // ---------- clients ----------
-  const INVITE = {
-    en: (n, e, p, u) => `Hello ${n},\n\nYour private client portal for your project with FA Architectural Design is ready. You can follow progress, see documents and photos, approve decisions and message the studio.\n\nOpen: ${u}\nEmail: ${e}\nTemporary password: ${p}\n\nYou will be asked to choose your own password the first time you sign in.\n\nFiras Moufid Abou Dargham\nFA Architectural Design`,
-    fr: (n, e, p, u) => `Bonjour ${n},\n\nVotre espace client pour votre projet avec FA Architectural Design est prêt. Vous pouvez y suivre l’avancement, consulter les documents et photos, valider les choix et écrire au bureau.\n\nAdresse : ${u}\nE-mail : ${e}\nMot de passe temporaire : ${p}\n\nVous choisirez votre propre mot de passe à la première connexion.\n\nFiras Moufid Abou Dargham\nFA Architectural Design`,
-    ar: (n, e, p, u) => `مرحباً ${n}،\n\nبوابتك الخاصة لمتابعة مشروعك مع FA Architectural Design أصبحت جاهزة. يمكنك من خلالها متابعة سير العمل، والاطلاع على المستندات والصور، والموافقة على القرارات، ومراسلة المكتب.\n\nالرابط: ${u}\nالبريد الإلكتروني: ${e}\nكلمة المرور المؤقتة: ${p}\n\nسيُطلب منك اختيار كلمة مرور خاصة بك عند أول تسجيل دخول.\n\nفراس مفيد أبو ضرغم\nFA Architectural Design`,
+  // Messages the studio sends to clients, in the client's language.
+  const SIGN = { en: 'Firas Moufid Abou Dargham\nFA Architectural Design', fr: 'Firas Moufid Abou Dargham\nFA Architectural Design', ar: 'فراس مفيد أبو ضرغم\nFA Architectural Design' };
+  const MSG = {
+    invite: {
+      en: (n, e, link, portal) => `Hello ${n},\n\nYour private client portal for your project with FA Architectural Design is ready. You can follow progress, see documents and photos, approve decisions and message the studio.\n\nTap this link to open your portal and choose your password (valid for 7 days):\n${link}\n\nAfter that, sign in any time at ${portal} with your email (${e}), or with Face ID / fingerprint.\n\n${SIGN.en}`,
+      fr: (n, e, link, portal) => `Bonjour ${n},\n\nVotre espace client pour votre projet avec FA Architectural Design est prêt. Vous pouvez y suivre l’avancement, consulter les documents et photos, valider les choix et écrire au bureau.\n\nTouchez ce lien pour ouvrir votre espace et choisir votre mot de passe (valable 7 jours) :\n${link}\n\nEnsuite, connectez-vous à tout moment sur ${portal} avec votre e-mail (${e}), ou avec Face ID / empreinte.\n\n${SIGN.fr}`,
+      ar: (n, e, link, portal) => `مرحباً ${n}،\n\nبوابتك الخاصة لمتابعة مشروعك مع FA Architectural Design أصبحت جاهزة. يمكنك من خلالها متابعة سير العمل، والاطلاع على المستندات والصور، والموافقة على القرارات، ومراسلة المكتب.\n\nاضغط على هذا الرابط لفتح بوابتك واختيار كلمة المرور (صالح لمدة ٧ أيام):\n${link}\n\nبعد ذلك يمكنك الدخول في أي وقت عبر ${portal} ببريدك الإلكتروني (${e})، أو عبر Face ID / البصمة.\n\n${SIGN.ar}`,
+    },
+    reset: {
+      en: (n, e, link) => `Hello ${n},\n\nHere is your new link to open your FA client portal and choose a new password (valid for 48 hours):\n${link}\n\n${SIGN.en}`,
+      fr: (n, e, link) => `Bonjour ${n},\n\nVoici votre nouveau lien pour ouvrir votre espace client FA et choisir un nouveau mot de passe (valable 48 heures) :\n${link}\n\n${SIGN.fr}`,
+      ar: (n, e, link) => `مرحباً ${n}،\n\nهذا رابطك الجديد لفتح بوابة العملاء الخاصة بـ FA واختيار كلمة مرور جديدة (صالح لمدة ٤٨ ساعة):\n${link}\n\n${SIGN.ar}`,
+    },
+    password: {
+      en: (n, e, pw, portal) => `Hello ${n},\n\nI have set a temporary password for your FA client portal:\n\nOpen: ${portal}\nEmail: ${e}\nTemporary password: ${pw}\n\nYou will be asked to choose your own password when you sign in.\n\n${SIGN.en}`,
+      fr: (n, e, pw, portal) => `Bonjour ${n},\n\nJ’ai défini un mot de passe temporaire pour votre espace client FA :\n\nAdresse : ${portal}\nE-mail : ${e}\nMot de passe temporaire : ${pw}\n\nVous choisirez votre propre mot de passe à la connexion.\n\n${SIGN.fr}`,
+      ar: (n, e, pw, portal) => `مرحباً ${n}،\n\nحدّدت لك كلمة مرور مؤقتة لبوابة العملاء الخاصة بـ FA:\n\nالرابط: ${portal}\nالبريد الإلكتروني: ${e}\nكلمة المرور المؤقتة: ${pw}\n\nسيُطلب منك اختيار كلمة مرور خاصة بك عند الدخول.\n\n${SIGN.ar}`,
+    },
   };
-  function showInvite(client, password) {
-    const text = (INVITE[client.lang] || INVITE.en)(client.name.split(' ')[0], client.email, password, location.origin + '/portal/');
-    FA.modal(`<h2>Send these details to ${esc(client.name)}</h2>
-      <p class="small muted">Copy this message and send it on WhatsApp or by email. The temporary password is shown only now. If it gets lost, use “Reset password”.</p>
-      <div class="copybox" id="inv" dir="${client.lang === 'ar' ? 'rtl' : 'ltr'}">${esc(text)}</div>
-      <div class="acts"><button class="btn" id="inv-copy" type="button">Copy message</button><a class="btn ghost" id="inv-wa" target="_blank" rel="noopener">Open WhatsApp</a><button class="btn ghost" data-close type="button">Done</button></div>`,
+  const portalUrl = () => location.origin + '/portal/';
+  function showMessage(client, title, note, text) {
+    FA.modal(`<h2>${esc(title)}</h2><p class="small muted">${esc(note)}</p>
+      <div class="copybox" dir="${client.lang === 'ar' ? 'rtl' : 'ltr'}">${esc(text)}</div>
+      <div class="acts"><button class="btn" id="msg-copy" type="button">Copy message</button><a class="btn ghost" id="msg-wa" target="_blank" rel="noopener">Open WhatsApp</a><button class="btn ghost" data-close type="button">Done</button></div>`,
       { onOpen: (bg) => {
-        $('#inv-copy', bg).onclick = (e) => FA.copy(text, e.target, 'Copied');
+        $('#msg-copy', bg).onclick = (e) => FA.copy(text, e.target, 'Copied');
         const phone = String(client.phone || '').replace(/[^\d]/g, '');
-        $('#inv-wa', bg).href = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+        $('#msg-wa', bg).href = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+        if (!phone) $('#msg-wa', bg).title = 'No phone number saved for this client: WhatsApp will ask you to choose the contact.';
+      } });
+  }
+  function showLink(client, r) {
+    const first = client.name.split(' ')[0], lang = MSG.invite[client.lang] ? client.lang : 'en';
+    const text = r.purpose === 'invite' ? MSG.invite[lang](first, client.email, r.link, portalUrl()) : MSG.reset[lang](first, client.email, r.link);
+    showMessage(client, r.purpose === 'invite' ? `Send the invitation to ${client.name}` : `Send the new link to ${client.name}`,
+      `The client taps the link and chooses ${r.purpose === 'invite' ? 'their' : 'a new'} password. It works once and stays valid until ${d(r.expiresAt)}, ${FA.time(r.expiresAt, L)}. Any older link stops working.`, text);
+  }
+  function helpSignIn(c) {
+    const status = [
+      c.last_login_at ? `Last signed in ${d(c.last_login_at)}.` : 'Has not signed in yet.',
+      c.link_expires ? `An unused link is valid until ${d(c.link_expires)}.` : '',
+      c.devices ? `Face ID / fingerprint is on for ${c.devices} device${c.devices === 1 ? '' : 's'}.` : '',
+    ].filter(Boolean).join(' ');
+    FA.modal(`<h2>Help ${esc(c.name)} sign in</h2><p class="small muted">${esc(status)}</p>
+      <div class="card" style="padding:16px"><p style="color:var(--white)">1 · Send a new link <span class="pill ok" style="margin-inline-start:6px">Recommended</span></p>
+        <p class="small muted" style="margin:6px 0 12px">The client taps it on their phone and chooses a new password. Their other devices are signed out.</p>
+        <button class="btn sm" type="button" id="h-link">Create link</button></div>
+      <div class="card" style="padding:16px"><p style="color:var(--white)">2 · Set a password yourself</p>
+        <p class="small muted" style="margin:6px 0 12px">Useful during a phone call. The client is asked to change it when they sign in.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><input class="input" id="h-pw" style="flex:1;min-width:160px" autocomplete="off" placeholder="At least 8 characters" dir="ltr"><button class="btn ghost sm" type="button" id="h-gen">Suggest one</button><button class="btn sm" type="button" id="h-set">Set password</button></div>
+        <p class="err" id="h-err" hidden style="margin-top:8px"></p></div>
+      ${c.devices ? `<div class="card" style="padding:16px"><p style="color:var(--white)">3 · Lost phone?</p><p class="small muted" style="margin:6px 0 12px">Remove Face ID / fingerprint sign-in from all of ${esc(c.name.split(' ')[0])}’s devices.</p><button class="btn danger sm" type="button" id="h-dev">Remove ${c.devices} device${c.devices === 1 ? '' : 's'}</button></div>` : ''}
+      <div class="acts"><button class="btn ghost" data-close type="button">Close</button></div>`,
+      { onOpen: (bg, close) => {
+        $('#h-link', bg).onclick = async () => { try { const r = await api('POST', `/api/studio/clients/${c.id}/access-link`); close(); clientsPage(); setTimeout(() => showLink(c, r), 60); } catch (e) { FA.toast(e.message); } };
+        $('#h-gen', bg).onclick = () => { const a = 'abcdefghjkmnpqrstuvwxyz', D = '23456789'; const r = (x) => x[crypto.getRandomValues(new Uint32Array(1))[0] % x.length]; $('#h-pw', bg).value = 'Fa-' + Array.from({ length: 4 }, () => r(a)).join('') + Array.from({ length: 4 }, () => r(D)).join(''); };
+        $('#h-set', bg).onclick = async () => {
+          const pw = $('#h-pw', bg).value.trim();
+          try {
+            await api('POST', `/api/studio/clients/${c.id}/set-password`, { password: pw });
+            close(); clientsPage();
+            const lang = MSG.password[c.lang] ? c.lang : 'en';
+            setTimeout(() => showMessage(c, `Send the password to ${c.name}`, 'Their other devices were signed out. They will choose their own password when they sign in.', MSG.password[lang](c.name.split(' ')[0], c.email, pw, portalUrl())), 60);
+          } catch (e) { $('#h-err', bg).textContent = e.message; $('#h-err', bg).hidden = false; }
+        };
+        if ($('#h-dev', bg)) $('#h-dev', bg).onclick = async () => { await api('DELETE', `/api/studio/clients/${c.id}/passkeys`); close(); FA.toast('Face ID / fingerprint removed'); clientsPage(); };
       } });
   }
   async function clientsPage() {
@@ -407,10 +458,10 @@
     await Promise.all([loadClients(), refreshCounts()]);
     const langName = { en: 'English', fr: 'Français', ar: 'العربية' };
     shell('clients', `<div class="phead"><h1>Clients</h1><button class="btn" id="add" type="button">Add client</button></div>
-      ${state.clients.length ? `<div class="tablewrap"><table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Language</th><th>Projects</th><th>Last sign-in</th><th></th></tr></thead><tbody>
-        ${state.clients.map((c) => `<tr style="${c.active ? '' : 'opacity:.55'}"><td><b>${esc(c.name)}</b>${c.active ? '' : ' <span class="pill due">Disabled</span>'}</td><td>${esc(c.email)}</td><td dir="ltr">${esc(c.phone || '—')}</td><td>${langName[c.lang]}</td><td class="num">${c.projects}</td><td class="num">${c.last_login_at ? esc(d(c.last_login_at)) : '<span class="muted">Never</span>'}</td>
-          <td><div class="row-acts"><button class="btn ghost sm" type="button" data-edit="${c.id}">Edit</button><button class="btn ghost sm" type="button" data-reset="${c.id}">Reset password</button></div></td></tr>`).join('')}
-      </tbody></table></div>` : '<div class="empty"><b>No clients yet</b><span>Add a client, then create their project. They receive a link and a temporary password to sign in.</span></div>'}`);
+      ${state.clients.length ? `<div class="tablewrap"><table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Language</th><th>Projects</th><th>Sign-in</th><th></th></tr></thead><tbody>
+        ${state.clients.map((c) => `<tr style="${c.active ? '' : 'opacity:.55'}"><td><b>${esc(c.name)}</b>${c.active ? '' : ' <span class="pill due">Disabled</span>'}</td><td>${esc(c.email)}</td><td dir="ltr">${esc(c.phone || '—')}</td><td>${langName[c.lang]}</td><td class="num">${c.projects}</td><td class="small">${c.last_login_at ? esc(d(c.last_login_at)) : (c.link_expires ? '<span class="pill warn">Invited</span>' : '<span class="muted">Never</span>')}${c.devices ? ' <span class="pill ok">Face ID</span>' : ''}</td>
+          <td><div class="row-acts"><button class="btn ghost sm" type="button" data-edit="${c.id}">Edit</button><button class="btn ghost sm" type="button" data-help="${c.id}">Help with sign-in</button></div></td></tr>`).join('')}
+      </tbody></table></div>` : '<div class="empty"><b>No clients yet</b><span>Add a client, then create their project. They receive a one-tap link by WhatsApp or email to open their portal.</span></div>'}`);
     const form = (c = {}) => `<form id="cf" style="display:flex;flex-direction:column;gap:14px"><h2>${c.id ? 'Edit client' : 'Add client'}</h2>
       <div class="field"><label for="cf-name">Full name</label><input id="cf-name" value="${esc(c.name || '')}" required></div>
       <div class="field"><label for="cf-email">Email (used to sign in)</label><input id="cf-email" type="email" value="${esc(c.email || '')}" required dir="ltr"></div>
@@ -425,7 +476,7 @@
         try {
           const lang = $('#cf-lang', bg).value, phone = $('#cf-phone', bg).value;
           const r = await api('POST', '/api/studio/clients', { name: $('#cf-name', bg).value, email: $('#cf-email', bg).value, phone, lang });
-          close(); await clientsPage(); showInvite({ ...r.client, lang, phone }, r.temporaryPassword);
+          close(); await clientsPage(); showLink({ ...r.client, lang, phone }, r);
         } catch (ex) { $('#cf-err', bg).textContent = ex.message; $('#cf-err', bg).hidden = false; }
       });
     } });
@@ -436,8 +487,7 @@
         catch (ex) { $('#cf-err', bg).textContent = ex.message; $('#cf-err', bg).hidden = false; }
       });
     } }); }; });
-    $$('[data-reset]').forEach((x) => { x.onclick = () => { const c = state.clients.find((y) => y.id === Number(x.dataset.reset));
-      confirmBox(`Reset ${c.name}’s password?`, 'They are signed out and receive a new temporary password from you.', 'Reset password', async () => { const r = await api('POST', `/api/studio/clients/${c.id}/reset-password`); setTimeout(() => showInvite(c, r.temporaryPassword), 50); }); }; });
+    $$('[data-help]').forEach((x) => { x.onclick = () => helpSignIn(state.clients.find((y) => y.id === Number(x.dataset.help))); });
   }
 
   // ---------- website requests ----------
@@ -477,6 +527,7 @@
         <div class="card"><h2>Notifications on this device</h2><p class="small" id="n-state">…</p><div class="acts" style="margin-top:14px" id="n-acts"></div>
           <p class="small muted" style="margin-top:14px">Turn this on on your phone to be alerted when a client approves, requests changes, writes to you, or when someone sends the website form. On iPhone, first add the portal to your Home Screen from Safari.</p></div>
       </div><div class="stack">
+        <div class="card"><h2>Face ID / fingerprint</h2><div id="pk-list"><p class="small muted">…</p></div><div class="acts" style="margin-top:14px"><button class="btn" id="pk-add" type="button" hidden>Turn on for this device</button></div></div>
         <div class="card"><h2>Appearance</h2><div class="filters" style="margin:0"><button type="button" data-mode="night" aria-pressed="${FA.mode() !== 'day'}">Night</button><button type="button" data-mode="day" aria-pressed="${FA.mode() === 'day'}">Day</button></div></div>
         <div class="card"><h2>Recent notifications</h2>${nt.notifications.length ? `<ul class="list">${nt.notifications.slice(0, 10).map((n) => `<li><span class="dot ${n.read_at ? '' : 'warn'}"></span><div class="t"><b>${esc(n.title)}</b><span>${esc(n.body)}</span></div><span class="r">${esc(ds(n.created_at))}</span></li>`).join('')}</ul>` : '<p class="small muted">Nothing yet.</p>'}</div>
         <button class="btn ghost" id="so" type="button">${FA.icon.out}Sign out</button>
@@ -490,6 +541,7 @@
     });
     async function paint() {
       const st = await FA.pushState().catch(() => 'unsupported');
+      if (!$('#n-state')) return;
       const text = { on: 'On.', off: 'Off.', blocked: 'Blocked in this browser’s settings. Allow notifications for this site, then reload.', unsupported: 'This browser does not support notifications.', 'ios-install': 'On iPhone: open the portal in Safari, tap Share → Add to Home Screen, then open it from the icon and turn notifications on there.' };
       $('#n-state').textContent = text[st];
       $('#n-acts').innerHTML = st === 'on' ? '<button class="btn" id="n-test" type="button">Send a test</button><button class="btn ghost" id="n-off" type="button">Turn off</button>' : st === 'off' ? '<button class="btn" id="n-on" type="button">Turn on</button>' : '';
@@ -498,6 +550,17 @@
       if ($('#n-test')) $('#n-test').onclick = async () => { await api('POST', '/api/push/test'); FA.toast('Test sent'); };
     }
     paint();
+    async function paintPk() {
+      const can = await FA.passkeyAvailable();
+      let list = []; try { list = (await api('GET', '/api/passkeys')).passkeys; } catch (e) {}
+      if (!$('#pk-list')) return; // the page changed meanwhile
+      $('#pk-list').innerHTML = list.length ? `<ul class="list">${list.map((k) => `<li><span class="dot ok"></span><div class="t"><b>${esc(k.label || '')}</b><span>${esc(k.last_used_at ? 'Last used ' + d(k.last_used_at) : 'Added ' + d(k.created_at))}</span></div><button class="linkish" type="button" data-pk-del="${k.id}">Remove</button></li>`).join('')}</ul>`
+        : `<p class="small muted">${can ? 'Sign in to the studio with Face ID or your fingerprint instead of your password.' : 'This browser or device can’t use Face ID / fingerprint sign-in.'}</p>`;
+      $('#pk-add').hidden = !can;
+      $$('[data-pk-del]').forEach((b) => { b.onclick = async () => { await api('DELETE', '/api/passkeys/' + b.dataset.pkDel); paintPk(); }; });
+    }
+    $('#pk-add').onclick = async () => { try { await FA.passkeyRegister(); FA.toast('Face ID / fingerprint is on for this device'); paintPk(); } catch (e) { if (!FA.passkeyCancelled(e)) FA.toast(e.message || 'It did not work on this device.'); } };
+    paintPk();
     await api('POST', '/api/notifications/read').catch(() => {});
   }
 
