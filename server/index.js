@@ -43,7 +43,7 @@ function serveStatic(req, res, pathname) {
   const headers = { 'Content-Type': MIME[ext] || 'application/octet-stream' };
   const base = path.basename(full);
   if (ext === '.html' || base === 'sw.js' || ext === '.webmanifest') headers['Cache-Control'] = 'no-cache';
-  else if (ext === '.js' || ext === '.css') headers['Cache-Control'] = 'public, max-age=3600';
+  else if (ext === '.js' || ext === '.css') headers['Cache-Control'] = 'no-cache'; // always checks for a newer version (cheap thanks to ETag), so updates show at once
   else headers['Cache-Control'] = 'public, max-age=604800';
   if (base === 'sw.js') headers['Service-Worker-Allowed'] = '/portal/';
   const etag = `"${st.size.toString(16)}-${st.mtimeMs.toString(16)}"`;
