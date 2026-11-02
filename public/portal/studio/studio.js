@@ -18,6 +18,21 @@
     if (state.user.role !== 'admin') { location.replace('/portal/'); return; }
     document.documentElement.lang = 'en'; document.documentElement.dir = 'ltr';
     window.addEventListener('hashchange', route);
+    // Pressing Enter (or "Next" on a phone keyboard) moves to the next field instead of saving the form,
+    // so a half-typed project is never created by accident. Only the button saves.
+    document.addEventListener('keydown', (e) => {
+      const t = e.target;
+      if (e.key !== 'Enter' || e.isComposing || t.tagName !== 'INPUT' || !t.form || ['submit', 'button', 'checkbox', 'radio', 'file'].includes(t.type)) return;
+      if (t.form.id === 'compose' || t.form.id === 'pw') return;
+      e.preventDefault();
+      const fields = [...t.form.querySelectorAll('input:not([type=hidden]):not([hidden]):not([disabled]),select:not([disabled]),textarea:not([disabled])')];
+      const next = fields[fields.indexOf(t) + 1];
+      if (next) next.focus(); else t.blur();
+    });
+    document.addEventListener('focusin', (e) => {
+      const t = e.target;
+      if (t.tagName === 'INPUT' && t.form && !t.hasAttribute('enterkeyhint')) t.setAttribute('enterkeyhint', 'next');
+    });
     route();
   }
 
@@ -113,7 +128,7 @@
       <form class="card" id="np" style="max-width:760px"><div class="form-grid">
         <div class="field full"><label for="np-name">Project name</label><input id="np-name" required placeholder="e.g. Villa Haddad"></div>
         <div class="field"><label for="np-loc">Location</label><input id="np-loc" placeholder="e.g. Baakline, Chouf"></div>
-        <div class="field"><label for="np-type">Type</label><input id="np-type" list="types" placeholder="e.g. Villa"><datalist id="types"><option>Villa</option><option>Residential building</option><option>Apartment interior</option><option>Office</option><option>Commercial</option><option>Resort</option><option>Industrial</option><option>Landscaping</option><option>Renovation</option></datalist></div>
+        <div class="field"><label for="np-type-sel">Type</label><select id="np-type-sel"><option value="">Choose…</option><option>Villa</option><option>Residential building</option><option>Apartment interior</option><option>Office</option><option>Commercial</option><option>Resort</option><option>Industrial</option><option>Landscaping</option><option>Renovation</option><option value="__other">Other…</option></select><input id="np-type" placeholder="Type of project" hidden style="margin-top:8px"></div>
         <div class="field full"><label for="np-client">Client</label><select id="np-client">${clientOptions(null)}</select><span class="hint">Not in the list? <a class="linkish" href="#/clients">Add the client first</a>, then come back.</span></div>
         <div class="field"><label for="np-value">Contract value</label><input id="np-value" inputmode="decimal" placeholder="e.g. 420000"></div>
         <div class="field"><label for="np-cur">Currency</label><select id="np-cur"><option>USD</option><option>EUR</option><option>LBP</option></select></div>
@@ -121,6 +136,7 @@
         <p class="err full" id="np-err" hidden></p>
         <div class="full acts"><button class="btn" type="submit">Create project</button><a class="btn ghost" href="#/projects">Cancel</a></div>
       </div></form>`);
+    $('#np-type-sel').onchange = (e) => { const o = e.target.value === '__other'; $('#np-type').hidden = !o; $('#np-type').value = o ? '' : e.target.value; if (o) $('#np-type').focus(); };
     $('#np').addEventListener('submit', async (e) => {
       e.preventDefault();
       try {
