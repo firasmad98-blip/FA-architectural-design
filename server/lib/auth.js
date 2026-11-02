@@ -85,18 +85,33 @@ async function ensureAdmin() {
       [hashPassword(process.env.ADMIN_PASSWORD), process.env.ADMIN_EMAIL.trim()]);
     if (r) { await db.query('DELETE FROM sessions WHERE user_id = $1', [r.id]); console.log('  Studio password was reset from ADMIN_PASSWORD. Remove ADMIN_RESET and ADMIN_PASSWORD now.'); }
   }
-  if (count && count.n > 0) return;
   const email = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
-  const password = process.env.ADMIN_PASSWORD || '';
-  if (!email || !password) {
-    console.warn('\n  No studio account yet. Set ADMIN_EMAIL and ADMIN_PASSWORD, then restart, to create it.\n');
+  if (count && count.n > 0) {
+    // The studio has not chosen its password yet (or ADMIN_SETUP_LINK=true): print a fresh setup link.
+    const a = await db.one(`SELECT id, last_login_at FROM users WHERE role = 'admin' ORDER BY id LIMIT 1`);
+    if (a && (!a.last_login_at && !process.env.ADMIN_PASSWORD || process.env.ADMIN_SETUP_LINK === 'true')) await printSetupLink(a.id);
     return;
   }
-  await db.query(
-    `INSERT INTO users (role, name, email, password_hash, lang) VALUES ('admin', $1, $2, $3, 'en')`,
-    [process.env.ADMIN_NAME || 'FA Studio', email, hashPassword(password)]
+  const password = process.env.ADMIN_PASSWORD || '';
+  if (!email) {
+    console.warn('\n  No studio account yet. Set ADMIN_EMAIL, then restart, to create it.\n');
+    return;
+  }
+  // Without ADMIN_PASSWORD, the studio chooses its own password from a one-time link printed in the logs,
+  // so no password ever has to be typed into Railway.
+  const u = await db.one(
+    `INSERT INTO users (role, name, email, password_hash, lang) VALUES ('admin', $1, $2, $3, 'en') RETURNING id`,
+    [process.env.ADMIN_NAME || 'FA Studio', email, hashPassword(password || randomPassword() + randomPassword())]
   );
   console.log(`  Studio account created for ${email}.`);
+  if (!password) await printSetupLink(u.id);
+}
+
+async function printSetupLink(userId) {
+  const access = require('./access');
+  const link = await access.createLink(userId, 'invite');
+  const base = (process.env.PUBLIC_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : '')).replace(/\/+$/, '');
+  console.log(`\n  ==== STUDIO SETUP ====\n  Open this link to choose your studio password (works once, valid 7 days):\n  ${base || '<your web address>'}/portal/#/access/${link.token}\n  ======================\n`);
 }
 
 module.exports = { hashPassword, verifyPassword, checkPasswordStrength, randomPassword, createSession, destroySession, loadUser, requireUser, requireAdmin, ensureAdmin };
